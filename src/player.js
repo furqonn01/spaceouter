@@ -289,15 +289,21 @@ export class Player {
     let moveX = 0;
     let moveY = 0;
 
-    if (input.left) moveX -= 1;
-    if (input.right) moveX += 1;
-    if (input.up) moveY += 1;
-    if (input.down) moveY -= 1;
+    // Seamless Analog Joystick & Keyboard input
+    if (input.analogX !== undefined && (input.analogX !== 0 || input.analogY !== 0)) {
+      moveX = input.analogX;
+      moveY = input.analogY;
+    } else {
+      if (input.left) moveX -= 1;
+      if (input.right) moveX += 1;
+      if (input.up) moveY += 1;
+      if (input.down) moveY -= 1;
 
-    // Normalize diagonal
-    if (moveX !== 0 && moveY !== 0) {
-      moveX *= 0.7071;
-      moveY *= 0.7071;
+      // Normalize diagonal
+      if (moveX !== 0 && moveY !== 0) {
+        moveX *= 0.7071;
+        moveY *= 0.7071;
+      }
     }
 
     // Smooth movement lerp

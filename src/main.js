@@ -30,6 +30,8 @@ class Game {
       right: false,
       fire: false,
       boost: false,
+      analogX: 0,
+      analogY: 0,
     };
 
     this.mouse = { x: 0, y: 0, isDown: false };
@@ -284,7 +286,7 @@ class Game {
     let touchId = null;
     let startX = 0;
     let startY = 0;
-    const maxRadius = 50;
+    const maxRadius = 45;
 
     if (moveArea) {
       moveArea.addEventListener('touchstart', (e) => {
@@ -311,14 +313,41 @@ class Game {
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
             const dist = Math.hypot(dx, dy);
-            const clampedDist = Math.min(dist, maxRadius);
-            const angle = Math.atan2(dy, dx);
+
+            // Dynamic following joystick:
+            // When thumb drags past maxRadius, glide joystick base with it so you NEVER run out of analog range!
+            if (dist > maxRadius) {
+              const excess = dist - maxRadius;
+              const angle = Math.atan2(dy, dx);
+              startX += Math.cos(angle) * excess;
+              startY += Math.sin(angle) * excess;
+              if (joystick) {
+                joystick.style.left = `${startX}px`;
+                joystick.style.top = `${startY}px`;
+              }
+            }
+
+            const currentDx = touch.clientX - startX;
+            const currentDy = touch.clientY - startY;
+            const currentDist = Math.hypot(currentDx, currentDy);
+            const clampedDist = Math.min(currentDist, maxRadius);
+            const angle = Math.atan2(currentDy, currentDx);
             const px = Math.cos(angle) * clampedDist;
             const py = Math.sin(angle) * clampedDist;
 
             if (knob) knob.style.transform = `translate(${px}px, ${py}px)`;
 
-            // Deadzone of 8px for responsive precision
+            // Smooth analog output [-1.0, 1.0] with 4px deadzone
+            const deadZone = 4;
+            if (currentDist > deadZone) {
+              const norm = Math.min((currentDist - deadZone) / (maxRadius - deadZone), 1.0);
+              this.input.analogX = Math.cos(angle) * norm;
+              this.input.analogY = -Math.sin(angle) * norm; // Screen Y is inverted from 3D space
+            } else {
+              this.input.analogX = 0;
+              this.input.analogY = 0;
+            }
+
             this.input.left = px < -8;
             this.input.right = px > 8;
             this.input.up = py < -8;
@@ -333,6 +362,8 @@ class Game {
             touchId = null;
             if (joystick) joystick.style.display = 'none';
             if (knob) knob.style.transform = 'translate(0px, 0px)';
+            this.input.analogX = 0;
+            this.input.analogY = 0;
             this.input.left = false;
             this.input.right = false;
             this.input.up = false;
