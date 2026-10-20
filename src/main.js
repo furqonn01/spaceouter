@@ -151,8 +151,65 @@ class Game {
       }
     });
 
+    // PWA & Service Worker
+    this.setupPWA();
+
     // Mobile Virtual Joystick & Buttons
     this.setupTouchControls();
+  }
+
+  setupPWA() {
+    // 1. Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered successfully:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] Service Worker registration failed:', err);
+          });
+      });
+    }
+
+    // 2. Handle install prompt
+    let deferredPrompt = null;
+    const hudInstallBtn = document.getElementById('install-btn');
+    const modalInstallBtn = document.getElementById('modal-install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (hudInstallBtn) hudInstallBtn.style.display = 'inline-flex';
+      if (modalInstallBtn) modalInstallBtn.style.display = 'block';
+    });
+
+    const triggerInstall = async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`[PWA] User install choice: ${outcome}`);
+      deferredPrompt = null;
+      if (hudInstallBtn) hudInstallBtn.style.display = 'none';
+      if (modalInstallBtn) modalInstallBtn.style.display = 'none';
+    };
+
+    if (hudInstallBtn) hudInstallBtn.addEventListener('click', triggerInstall);
+    if (modalInstallBtn) modalInstallBtn.addEventListener('click', triggerInstall);
+
+    window.addEventListener('appinstalled', () => {
+      this.showToast('🚀 APP BERHASIL DIPASANG! SIAP DIMAINKAN OFFLINE');
+      if (hudInstallBtn) hudInstallBtn.style.display = 'none';
+      if (modalInstallBtn) modalInstallBtn.style.display = 'none';
+    });
+
+    // 3. Online/Offline network monitoring
+    window.addEventListener('offline', () => {
+      this.showToast('📡 MODE OFFLINE AKTIF - PERMAINAN TETAP BERJALAN');
+    });
+    window.addEventListener('online', () => {
+      this.showToast('🌐 TERHUBUNG KEMBALI KE INTERNET');
+    });
   }
 
   setupTouchControls() {

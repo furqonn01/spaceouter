@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Astro Strike 3D - Space Shooter</title>
-  <meta name="description" content="Minigame tembak-tembakan pesawat luar angkasa 3D dengan Three.js, visual memukau, sound effect synth, dan boss battles.">
+  <meta name="theme-color" content="#00f3ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AstroStrike">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -59,6 +65,7 @@
     <div class="hud-panel right-hud">
       <div class="level-text" id="wave-display">WAVE 1</div>
       <div class="hud-buttons">
+        <button class="icon-btn" id="install-btn" title="Install App (PWA)" style="display: none;">📲</button>
         <button class="icon-btn" id="mute-btn" title="Toggle Sound">🔊</button>
         <button class="icon-btn" id="fs-btn" title="Fullscreen">⛶</button>
       </div>
@@ -115,7 +122,10 @@
         </div>
       </div>
 
-      <button class="action-btn" id="start-btn">LAUNCH MISSION</button>
+      <div style="display: flex; flex-direction: column; width: 100%; gap: 10px; align-items: center;">
+        <button class="action-btn" id="start-btn" style="width: 100%;">LAUNCH MISSION</button>
+        <button class="action-btn" id="modal-install-btn" style="display: none; width: 100%; font-size: 13px; padding: 10px 20px; background: rgba(0, 243, 255, 0.15); border: 1px solid var(--primary-cyan); color: var(--primary-cyan); box-shadow: none;">📲 INSTALL / PASANG APP (OFFLINE)</button>
+      </div>
     </div>
   </div>
 

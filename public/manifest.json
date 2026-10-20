@@ -1,0 +1,32 @@
+{
+  "name": "Astro Strike 3D - Space Shooter",
+  "short_name": "AstroStrike",
+  "description": "Minigame tembak-tembakan pesawat luar angkasa 3D offline berbasis Three.js",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#030611",
+  "theme_color": "#00f3ff",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "arcade", "action"]
+}
