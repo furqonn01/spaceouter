@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Astro Strike 3D - Space Shooter</title>
+  <meta name="description" content="Minigame tembak-tembakan pesawat luar angkasa 3D dengan Three.js, visual memukau, sound effect synth, dan boss battles.">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Reticle -->
+  <div id="crosshair">
+    <div class="reticle-ring"></div>
+    <div class="reticle-dot"></div>
+  </div>
+
+  <!-- Main HUD -->
+  <header id="hud">
+    <!-- Left: Vitals -->
+    <div class="hud-panel vitals-container">
+      <div class="bar-wrap">
+        <div class="bar-label shield-label">
+          <span>SHIELD</span>
+          <span id="shield-val">100%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill shield" id="shield-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-label hull-label">
+          <span>HULL</span>
+          <span id="hull-val">100%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill hull" id="hull-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="emp-status">
+        <span>EMP BOMBS:</span>
+        <div class="emp-icons" id="emp-icons-container">
+          <span class="emp-icon"></span>
+          <span class="emp-icon"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Score & Combo -->
+    <div class="center-hud">
+      <span class="score-title">SCORE</span>
+      <span class="score-display" id="score-display">00000</span>
+      <div class="combo-badge" id="combo-badge">COMBO x2</div>
+    </div>
+
+    <!-- Right: Wave & Controls -->
+    <div class="hud-panel right-hud">
+      <div class="level-text" id="wave-display">WAVE 1</div>
+      <div class="hud-buttons">
+        <button class="icon-btn" id="mute-btn" title="Toggle Sound">🔊</button>
+        <button class="icon-btn" id="fs-btn" title="Fullscreen">⛶</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Boss Warning & Health Bar -->
+  <div id="boss-bar-wrap">
+    <div class="boss-title">
+      <span>⚠️ WARNING: MOTHERSHIP</span>
+      <span id="boss-hp-val">100%</span>
+    </div>
+    <div class="boss-bar-track">
+      <div class="boss-bar-fill" id="boss-bar-fill" style="width: 100%;"></div>
+    </div>
+  </div>
+
+  <!-- Powerup Toast Notification -->
+  <div id="toast">⚡ WEAPON UPGRADE ACQUIRED!</div>
+
+  <!-- Mobile Touch Controls -->
+  <div id="mobile-controls">
+    <div id="touch-stick-zone" style="width: 120px; height: 120px; border: 2px dashed rgba(0,243,255,0.4); border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 45px; height: 45px; background: rgba(0,243,255,0.4); border-radius: 50%;" id="touch-stick"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <button class="touch-btn emp-btn" id="btn-touch-emp">EMP</button>
+      <button class="touch-btn" id="btn-touch-fire">FIRE</button>
+    </div>
+  </div>
+
+  <!-- Start Game Overlay -->
+  <div class="overlay" id="start-overlay">
+    <div class="modal-card">
+      <h1 class="game-title">ASTRO STRIKE 3D</h1>
+      <p class="game-subtitle">Deep Space Combat Simulator</p>
+
+      <div class="controls-guide">
+        <div class="control-item">
+          <span class="key-badge">W A S D / 🠐 🠒 🠑 🠓</span>
+          <span>Fly / Steer Ship</span>
+        </div>
+        <div class="control-item">
+          <span class="key-badge">SPACE / CLICK</span>
+          <span>Fire Lasers</span>
+        </div>
+        <div class="control-item">
+          <span class="key-badge">SHIFT</span>
+          <span>Afterburner Boost</span>
+        </div>
+        <div class="control-item">
+          <span class="key-badge">E / B / Q</span>
+          <span>EMP Shockwave Bomb</span>
+        </div>
+      </div>
+
+      <button class="action-btn" id="start-btn">LAUNCH MISSION</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="overlay" id="gameover-overlay" style="display: none;">
+    <div class="modal-card">
+      <h1 class="game-title" id="gameover-title" style="color: var(--danger-red);">MISSION FAILED</h1>
+      <p class="game-subtitle" id="gameover-desc">Your ship was destroyed in deep space.</p>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">FINAL SCORE</div>
+          <div class="stat-val" id="stat-score">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">HIGH SCORE</div>
+          <div class="stat-val" id="stat-high">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">ENEMIES DESTROYED</div>
+          <div class="stat-val" id="stat-kills">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">HIGHEST COMBO</div>
+          <div class="stat-val" id="stat-combo">x1</div>
+        </div>
+      </div>
+
+      <button class="action-btn" id="restart-btn">DEPLOY AGAIN</button>
+    </div>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

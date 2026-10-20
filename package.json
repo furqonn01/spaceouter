@@ -1,0 +1,16 @@
+{
+  "name": "mini-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "three": "^0.186.1",
+    "vite": "^8.3.4"
+  }
+}
