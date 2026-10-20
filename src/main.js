@@ -122,20 +122,37 @@ class Game {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    // Helper for immediate touch/click response without delay
+    const addTapListener = (el, callback) => {
+      if (!el) return;
+      let handled = false;
+      el.addEventListener('pointerdown', (e) => {
+        handled = true;
+        callback(e);
+      });
+      el.addEventListener('click', (e) => {
+        if (handled) {
+          handled = false;
+          return;
+        }
+        callback(e);
+      });
+    };
+
     // UI Buttons
-    document.getElementById('start-btn').addEventListener('click', () => {
+    addTapListener(document.getElementById('start-btn'), () => {
       sounds.init();
       this.startGame();
     });
 
-    document.getElementById('restart-btn').addEventListener('click', () => {
+    addTapListener(document.getElementById('restart-btn'), () => {
       sounds.init();
       this.startGame();
     });
 
     // Mute button
     const muteBtn = document.getElementById('mute-btn');
-    muteBtn.addEventListener('click', () => {
+    addTapListener(muteBtn, () => {
       sounds.init();
       const isMuted = sounds.toggleMute();
       muteBtn.textContent = isMuted ? '🔇' : '🔊';
@@ -143,7 +160,7 @@ class Game {
 
     // Fullscreen button
     const fsBtn = document.getElementById('fs-btn');
-    fsBtn.addEventListener('click', () => {
+    addTapListener(fsBtn, () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
@@ -715,7 +732,15 @@ class Game {
   }
 }
 
-// Instantiate game on load
-window.addEventListener('DOMContentLoaded', () => {
-  new Game();
-});
+// Safe instantiation supporting PWA standalone and normal browser load
+function launchGame() {
+  if (!window.__astroGameInstance) {
+    window.__astroGameInstance = new Game();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', launchGame);
+} else {
+  launchGame();
+}

@@ -1,8 +1,7 @@
-const CACHE_NAME = 'astro-strike-v1';
+const CACHE_NAME = 'astro-strike-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './style.css',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
@@ -10,26 +9,26 @@ const STATIC_ASSETS = [
   './models/millitary/Military_Rockett.fbx'
 ];
 
-// Install: pre-cache critical shell and assets
+// Install: pre-cache critical shell and assets safely
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Pre-caching static assets for offline play');
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[SW] Some assets could not be pre-cached, will cache on fetch:', err);
-      });
+      return Promise.allSettled(
+        STATIC_ASSETS.map((asset) => cache.add(asset).catch(() => {}))
+      );
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activate: clean up old caches and take control
+// Activate: clean up old caches and take immediate control
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW] Removing old cache:', key);
+            console.log('[SW] Removing obsolete cache:', key);
             return caches.delete(key);
           }
         })
@@ -38,41 +37,46 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Cache First with Network Fallback & Dynamic Caching
+// Fetch: Safe Cache First with Network Fallback
 self.addEventListener('fetch', (event) => {
   const req = event.request;
 
-  // Only handle GET requests
-  if (req.method !== 'GET') return;
+  // Only handle HTTP/HTTPS GET requests
+  if (req.method !== 'GET' || !req.url.startsWith('http')) return;
+
+  const url = new URL(req.url);
+
+  // Skip dev server WebSockets, HMR, and extension schemes
+  if (url.pathname.startsWith('/@') || url.pathname.includes('__vite') || url.search.includes('t=')) {
+    return;
+  }
 
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached asset immediately, but revalidate in background if online
+        // Fetch update in background if online
         fetch(req).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkResponse));
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkResponse.clone()));
           }
-        }).catch(() => {
-          // Offline, cachedResponse is fine
-        });
+        }).catch(() => {});
         return cachedResponse;
       }
 
-      // If not in cache, fetch from network and cache for next time
+      // If not cached, fetch from network and cache
       return fetch(req).then((networkResponse) => {
         if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
 
-        const responseToCache = networkResponse.clone();
+        const toCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(req, responseToCache);
+          cache.put(req, toCache);
         });
 
         return networkResponse;
       }).catch((err) => {
-        // If offline and requesting document, fallback to cached index.html
+        // If offline and navigating to a page, return index.html
         if (req.mode === 'navigate') {
           return caches.match('./index.html') || caches.match('./');
         }
