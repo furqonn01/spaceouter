@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { sounds } from './audio.js';
 
 export class Player {
@@ -31,133 +32,36 @@ export class Player {
     // Shield flash timer
     this.shieldHitTimer = 0;
 
-    this.buildShipMesh();
+    // Visual groups
+    this.modelContainer = new THREE.Group();
+    this.mesh.add(this.modelContainer);
+
+    this.initThrustersAndShield();
+    this.loadMilitaryModel();
+
     this.scene.add(this.mesh);
   }
 
-  buildShipMesh() {
-    // 1. Fuselage (Central Jet Body)
-    const bodyGeo = new THREE.ConeGeometry(1.4, 5.5, 6);
-    bodyGeo.rotateX(Math.PI / 2);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x1a2b4c,
-      metalness: 0.85,
-      roughness: 0.25,
-      flatShading: true,
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.castShadow = true;
-    this.mesh.add(body);
-
-    // Nose accent
-    const noseGeo = new THREE.ConeGeometry(0.8, 2.0, 5);
-    noseGeo.rotateX(Math.PI / 2);
-    const noseMat = new THREE.MeshStandardMaterial({
-      color: 0x00f3ff,
-      emissive: 0x00a8cc,
-      emissiveIntensity: 0.6,
-      metalness: 0.9,
-    });
-    const nose = new THREE.Mesh(noseGeo, noseMat);
-    nose.position.z = -2.2;
-    this.mesh.add(nose);
-
-    // 2. Cockpit Canopy
-    const canopyGeo = new THREE.SphereGeometry(0.7, 16, 12);
-    canopyGeo.scale(0.85, 0.7, 2.2);
-    const canopyMat = new THREE.MeshPhysicalMaterial({
-      color: 0x00f3ff,
-      emissive: 0x0099bb,
-      emissiveIntensity: 0.7,
-      transparent: true,
-      opacity: 0.85,
-      roughness: 0.1,
-      metalness: 0.1,
-      transmission: 0.6,
-    });
-    const canopy = new THREE.Mesh(canopyGeo, canopyMat);
-    canopy.position.set(0, 0.55, -0.4);
-    this.mesh.add(canopy);
-
-    // 3. Swept Wings
-    const wingShape = new THREE.Shape();
-    wingShape.moveTo(0, 0);
-    wingShape.lineTo(4.8, -1.8);
-    wingShape.lineTo(4.6, -3.2);
-    wingShape.lineTo(0, -1.4);
-    wingShape.closePath();
-
-    const extrudeSettings = { depth: 0.22, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.08, bevelThickness: 0.08 };
-    const wingGeo = new THREE.ExtrudeGeometry(wingShape, extrudeSettings);
-    wingGeo.rotateX(Math.PI / 2);
-
-    const wingMat = new THREE.MeshStandardMaterial({
-      color: 0x22365c,
-      metalness: 0.8,
-      roughness: 0.3,
-    });
-
-    const rightWing = new THREE.Mesh(wingGeo, wingMat);
-    rightWing.position.set(0.6, 0, 0.2);
-    this.mesh.add(rightWing);
-
-    const leftWing = rightWing.clone();
-    leftWing.scale.x = -1;
-    leftWing.position.set(-0.6, 0, 0.2);
-    this.mesh.add(leftWing);
-
-    // Wingtip blasters
-    const gunGeo = new THREE.CylinderGeometry(0.18, 0.18, 2.2, 8);
-    gunGeo.rotateX(Math.PI / 2);
-    const gunMat = new THREE.MeshStandardMaterial({
-      color: 0x334466,
-      metalness: 0.9,
-      roughness: 0.2,
-    });
-
-    this.rightGun = new THREE.Mesh(gunGeo, gunMat);
-    this.rightGun.position.set(4.6, 0, -1.2);
-    this.mesh.add(this.rightGun);
-
-    this.leftGun = new THREE.Mesh(gunGeo, gunMat);
-    this.leftGun.position.set(-4.6, 0, -1.2);
-    this.mesh.add(this.leftGun);
-
-    // 4. Twin Plasma Thrusters
-    const thrusterGeo = new THREE.CylinderGeometry(0.4, 0.45, 1.0, 10);
-    thrusterGeo.rotateX(Math.PI / 2);
-    const thrusterMat = new THREE.MeshStandardMaterial({
-      color: 0x111122,
-      metalness: 0.9,
-    });
-
-    const leftThruster = new THREE.Mesh(thrusterGeo, thrusterMat);
-    leftThruster.position.set(-0.75, 0.1, 2.4);
-    this.mesh.add(leftThruster);
-
-    const rightThruster = new THREE.Mesh(thrusterGeo, thrusterMat);
-    rightThruster.position.set(0.75, 0.1, 2.4);
-    this.mesh.add(rightThruster);
-
-    // Thruster Jet Glow
-    const flameGeo = new THREE.ConeGeometry(0.35, 2.2, 8);
+  initThrustersAndShield() {
+    // Twin Plasma Thrusters Jet Glow
+    const flameGeo = new THREE.ConeGeometry(0.38, 2.5, 8);
     flameGeo.rotateX(-Math.PI / 2);
     const flameMat = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
+      color: 0x00f3ff,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
     });
 
     this.leftFlame = new THREE.Mesh(flameGeo, flameMat);
-    this.leftFlame.position.set(-0.75, 0.1, 3.4);
+    this.leftFlame.position.set(-0.8, 0, 3.2);
     this.mesh.add(this.leftFlame);
 
     this.rightFlame = new THREE.Mesh(flameGeo, flameMat.clone());
-    this.rightFlame.position.set(0.75, 0.1, 3.4);
+    this.rightFlame.position.set(0.8, 0, 3.2);
     this.mesh.add(this.rightFlame);
 
-    // 5. Forcefield Shield Sphere
-    const shieldGeo = new THREE.SphereGeometry(3.6, 24, 20);
+    // Forcefield Shield Sphere
+    const shieldGeo = new THREE.SphereGeometry(4.2, 24, 20);
     this.shieldMat = new THREE.MeshBasicMaterial({
       color: 0x00f3ff,
       wireframe: true,
@@ -169,9 +73,101 @@ export class Player {
     this.mesh.add(this.shieldMesh);
 
     // Point Light on engine
-    this.engineLight = new THREE.PointLight(0x00f3ff, 2.5, 12);
-    this.engineLight.position.set(0, 0, 3.2);
+    this.engineLight = new THREE.PointLight(0x00f3ff, 2.8, 14);
+    this.engineLight.position.set(0, 0, 3.0);
     this.mesh.add(this.engineLight);
+  }
+
+  loadMilitaryModel() {
+    const loader = new FBXLoader();
+    const modelPath = '/models/millitary/Military_Rockett.fbx';
+
+    loader.load(
+      modelPath,
+      (fbx) => {
+        // Clear placeholder if any
+        while (this.modelContainer.children.length > 0) {
+          this.modelContainer.remove(this.modelContainer.children[0]);
+        }
+
+        // Calculate bounding box and center
+        const box = new THREE.Box3().setFromObject(fbx);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+
+        console.log('Military Model Loaded! Dimensions:', size, 'Center:', center);
+
+        // Center model geometry at origin
+        fbx.position.set(-center.x, -center.y, -center.z);
+
+        const pivot = new THREE.Group();
+        pivot.add(fbx);
+
+        // Standardize size to fit gameplay (target length ~7.5 units)
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const targetScale = 7.5 / (maxDim || 1);
+        pivot.scale.setScalar(targetScale);
+
+        // Determine orientation:
+        // Military Rocket model has nose along -X and tail along +X, with wings along Z.
+        // Rotating by -Math.PI / 2 around Y turns nose to -Z (forward) and tail to +Z (camera-facing),
+        // spreading the wings horizontally along X.
+        if (size.x >= size.y && size.x >= size.z) {
+          pivot.rotation.y = -Math.PI / 2;
+        } else if (size.y >= size.z && size.y >= size.x) {
+          pivot.rotation.x = -Math.PI / 2;
+        }
+
+        // Enhance materials with military stealth finish & metallic highlights
+        fbx.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+
+            if (child.material) {
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              materials.forEach((mat) => {
+                // If material is basic or standard, tune it to military sci-fi
+                mat.roughness = 0.35;
+                mat.metalness = 0.75;
+                if (!mat.color || (mat.color.r === 1 && mat.color.g === 1 && mat.color.b === 1)) {
+                  mat.color = new THREE.Color(0x3a4f63); // Tactical stealth blue-grey
+                }
+              });
+            }
+          }
+        });
+
+        // Add model to container
+        this.modelContainer.add(pivot);
+
+        // Reposition thrusters to match rocket exhaust at back
+        this.leftFlame.position.set(-0.7, 0, 3.4);
+        this.rightFlame.position.set(0.7, 0, 3.4);
+        this.engineLight.position.set(0, 0, 3.2);
+      },
+      undefined,
+      (err) => {
+        console.warn('Failed to load Military model, using procedural fallback:', err);
+        this.buildProceduralFallback();
+      }
+    );
+  }
+
+  buildProceduralFallback() {
+    // Fuselage
+    const bodyGeo = new THREE.ConeGeometry(1.4, 5.5, 6);
+    bodyGeo.rotateX(Math.PI / 2);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x2d3a4b,
+      metalness: 0.8,
+      roughness: 0.3,
+      flatShading: true,
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    this.modelContainer.add(body);
   }
 
   takeDamage(amount) {
@@ -225,7 +221,7 @@ export class Player {
       bolt.position.set(
         this.mesh.position.x + offsetX,
         this.mesh.position.y + offsetY,
-        this.mesh.position.z - 2.5
+        this.mesh.position.z - 3.2
       );
       this.scene.add(bolt);
       this.lasers.push({
@@ -239,20 +235,20 @@ export class Player {
     };
 
     if (this.weaponLevel === 1) {
-      // Dual wing blasters
-      createBolt(4.6, 0);
-      createBolt(-4.6, 0);
+      // Dual side rocket cannons
+      createBolt(2.2, 0);
+      createBolt(-2.2, 0);
     } else if (this.weaponLevel === 2) {
       // Triple spread
-      createBolt(0, 0.4, 0, 0);
-      createBolt(4.6, 0, 0.08, 0);
-      createBolt(-4.6, 0, -0.08, 0);
+      createBolt(0, 0.5, 0, 0);
+      createBolt(2.6, 0, 0.08, 0);
+      createBolt(-2.6, 0, -0.08, 0);
     } else {
       // Quad Overdrive
-      createBolt(-2.2, 0, -0.04, 0);
-      createBolt(2.2, 0, 0.04, 0);
-      createBolt(-4.6, 0, -0.12, 0);
-      createBolt(4.6, 0, 0.12, 0);
+      createBolt(-1.4, 0, -0.04, 0);
+      createBolt(1.4, 0, 0.04, 0);
+      createBolt(-3.0, 0, -0.12, 0);
+      createBolt(3.0, 0, 0.12, 0);
     }
   }
 
@@ -306,7 +302,7 @@ export class Player {
     const flameScale = (0.9 + Math.random() * 0.3) * (input.boost ? 1.7 : 1.0);
     this.leftFlame.scale.set(flameScale, flameScale, flameScale * 1.4);
     this.rightFlame.scale.set(flameScale, flameScale, flameScale * 1.4);
-    this.engineLight.intensity = (2.0 + Math.random() * 0.8) * (input.boost ? 2.0 : 1.0);
+    this.engineLight.intensity = (2.2 + Math.random() * 0.8) * (input.boost ? 2.2 : 1.0);
 
     // Shield glow on hit or shield active
     if (this.shieldHitTimer > 0) {
