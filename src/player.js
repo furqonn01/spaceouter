@@ -248,7 +248,27 @@ export class Player {
     }
   }
 
-  update(delta, input) {
+  updateBounds(camera) {
+    if (!camera) return;
+    const distZ = Math.abs(camera.position.z - this.mesh.position.z);
+    const vFovRad = (camera.fov * Math.PI) / 180;
+    const halfH = distZ * Math.tan(vFovRad / 2);
+    const halfW = halfH * camera.aspect;
+
+    // Safety margins so wings and nose remain visible
+    const marginX = 3.2;
+    const marginY = 2.8;
+
+    this.bounds.maxX = Math.max(5, halfW - marginX);
+    this.bounds.minX = -this.bounds.maxX;
+
+    // Center player slightly lower in the view so they can see oncoming enemies
+    const camOffset = camera.position.y * 0.35;
+    this.bounds.maxY = camOffset + halfH * 0.7;
+    this.bounds.minY = camOffset - halfH * 0.7;
+  }
+
+  update(delta, input, camera = null) {
     // 1. Weapon Timer
     if (this.weaponTimer > 0) {
       this.weaponTimer -= delta;
@@ -284,7 +304,12 @@ export class Player {
     this.mesh.position.x += moveX * currentSpeed * delta;
     this.mesh.position.y += moveY * currentSpeed * delta;
 
-    // Bounds clamping
+    // Dynamically calculate camera visible bounds so ship NEVER leaves frame
+    if (camera) {
+      this.updateBounds(camera);
+    }
+
+    // Bounds clamping strictly within visible screen
     this.mesh.position.x = THREE.MathUtils.clamp(this.mesh.position.x, this.bounds.minX, this.bounds.maxX);
     this.mesh.position.y = THREE.MathUtils.clamp(this.mesh.position.y, this.bounds.minY, this.bounds.maxY);
 

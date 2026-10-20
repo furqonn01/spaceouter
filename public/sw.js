@@ -1,4 +1,4 @@
-const CACHE_NAME = 'astro-strike-v3';
+const CACHE_NAME = 'astro-strike-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',

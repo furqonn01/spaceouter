@@ -86,14 +86,22 @@
   <!-- Powerup Toast Notification -->
   <div id="toast">⚡ WEAPON UPGRADE ACQUIRED!</div>
 
-  <!-- Mobile Touch Controls -->
+  <!-- Mobile Dynamic Touch Controls Overlay -->
   <div id="mobile-controls">
-    <div id="touch-stick-zone" style="width: 120px; height: 120px; border: 2px dashed rgba(0,243,255,0.4); border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center;">
-      <div style="width: 45px; height: 45px; background: rgba(0,243,255,0.4); border-radius: 50%;" id="touch-stick"></div>
+    <!-- Full Left Half Touch Zone for Dynamic Floating Joystick -->
+    <div id="touch-move-area">
+      <div id="dynamic-joystick">
+        <div id="dynamic-stick-ring">
+          <div id="dynamic-stick-knob"></div>
+        </div>
+      </div>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: center;">
-      <button class="touch-btn emp-btn" id="btn-touch-emp">EMP</button>
-      <button class="touch-btn" id="btn-touch-fire">FIRE</button>
+
+    <!-- Action Buttons on Right Side -->
+    <div id="touch-action-area">
+      <button class="touch-btn emp-btn" id="btn-touch-emp" title="Superweapon EMP">💣 EMP</button>
+      <button class="touch-btn autofire-btn active" id="btn-touch-autofire" title="Auto Fire">AUTO<br>ON</button>
+      <button class="touch-btn fire-btn" id="btn-touch-fire">FIRE</button>
     </div>
   </div>
 

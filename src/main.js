@@ -20,6 +20,8 @@ class Game {
     this.maxCombo = 1;
     this.comboTimer = 0;
 
+    this.autoFire = true;
+
     // Controls input state
     this.input = {
       up: false,
@@ -45,21 +47,45 @@ class Game {
     requestAnimationFrame(this.animate);
   }
 
+  updateCameraAspect() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+
+    // Responsive adaptation:
+    // If aspect < 1.0 (Mobile portrait), increase FOV and elevate camera
+    // to give a generous, comfortable view of deep space without cramping!
+    if (aspect < 1.0) {
+      this.camera.fov = 66;
+      this.cameraDefaultPos.set(0, 10, 32);
+    } else {
+      this.camera.fov = 54;
+      this.cameraDefaultPos.set(0, 7, 24);
+    }
+
+    this.camera.updateProjectionMatrix();
+    if (this.renderer) {
+      this.renderer.setSize(width, height);
+    }
+  }
+
   initThree() {
     // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x030611, 0.0035);
 
-    // 2. Camera
+    // 2. Camera with adaptive mobile framing
+    this.cameraDefaultPos = new THREE.Vector3(0, 7, 24);
     this.camera = new THREE.PerspectiveCamera(
-      58,
+      54,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
-    this.cameraDefaultPos = new THREE.Vector3(0, 7, 24);
     this.camera.position.copy(this.cameraDefaultPos);
     this.camera.lookAt(0, 0, -50);
+    this.updateCameraAspect();
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -117,9 +143,7 @@ class Game {
 
     // Resize
     window.addEventListener('resize', () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.updateCameraAspect();
     });
 
     // Helper for immediate touch/click response without delay
@@ -230,77 +254,117 @@ class Game {
   }
 
   setupTouchControls() {
-    const stickZone = document.getElementById('touch-stick-zone');
-    const stick = document.getElementById('touch-stick');
+    const moveArea = document.getElementById('touch-move-area');
+    const joystick = document.getElementById('dynamic-joystick');
+    const knob = document.getElementById('dynamic-stick-knob');
     const btnFire = document.getElementById('btn-touch-fire');
     const btnEmp = document.getElementById('btn-touch-emp');
+    const btnAutoFire = document.getElementById('btn-touch-autofire');
+
+    // Auto Fire Toggle
+    if (btnAutoFire) {
+      const toggleAutoFire = (e) => {
+        if (e) e.stopPropagation();
+        this.autoFire = !this.autoFire;
+        if (this.autoFire) {
+          btnAutoFire.classList.add('active');
+          btnAutoFire.innerHTML = 'AUTO<br>ON';
+          this.showToast('🎯 AUTO-FIRE: ON');
+        } else {
+          btnAutoFire.classList.remove('active');
+          btnAutoFire.innerHTML = 'AUTO<br>OFF';
+          this.input.fire = false;
+          this.showToast('🎯 AUTO-FIRE: OFF');
+        }
+      };
+      btnAutoFire.addEventListener('pointerdown', toggleAutoFire);
+      btnAutoFire.addEventListener('click', toggleAutoFire);
+    }
 
     let touchId = null;
     let startX = 0;
     let startY = 0;
+    const maxRadius = 50;
 
-    stickZone.addEventListener('touchstart', (e) => {
-      sounds.init();
-      const touch = e.changedTouches[0];
-      touchId = touch.identifier;
-      const rect = stickZone.getBoundingClientRect();
-      startX = rect.left + rect.width / 2;
-      startY = rect.top + rect.height / 2;
-    }, { passive: true });
+    if (moveArea) {
+      moveArea.addEventListener('touchstart', (e) => {
+        sounds.init();
+        if (touchId !== null) return;
+        const touch = e.changedTouches[0];
+        touchId = touch.identifier;
+        startX = touch.clientX;
+        startY = touch.clientY;
 
-    window.addEventListener('touchmove', (e) => {
-      if (touchId === null) return;
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        if (touch.identifier === touchId) {
-          const dx = touch.clientX - startX;
-          const dy = touch.clientY - startY;
-          const maxRadius = 45;
-          const dist = Math.min(Math.hypot(dx, dy), maxRadius);
-          const angle = Math.atan2(dy, dx);
-          const px = Math.cos(angle) * dist;
-          const py = Math.sin(angle) * dist;
-
-          stick.style.transform = `translate(${px}px, ${py}px)`;
-
-          this.input.left = px < -12;
-          this.input.right = px > 12;
-          this.input.up = py < -12;
-          this.input.down = py > 12;
+        if (joystick) {
+          joystick.style.left = `${startX}px`;
+          joystick.style.top = `${startY}px`;
+          joystick.style.display = 'block';
+          if (knob) knob.style.transform = 'translate(0px, 0px)';
         }
-      }
-    }, { passive: true });
+      }, { passive: true });
 
-    const endTouch = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === touchId) {
-          touchId = null;
-          stick.style.transform = 'translate(0, 0)';
-          this.input.left = false;
-          this.input.right = false;
-          this.input.up = false;
-          this.input.down = false;
+      window.addEventListener('touchmove', (e) => {
+        if (touchId === null) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const touch = e.changedTouches[i];
+          if (touch.identifier === touchId) {
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            const dist = Math.hypot(dx, dy);
+            const clampedDist = Math.min(dist, maxRadius);
+            const angle = Math.atan2(dy, dx);
+            const px = Math.cos(angle) * clampedDist;
+            const py = Math.sin(angle) * clampedDist;
+
+            if (knob) knob.style.transform = `translate(${px}px, ${py}px)`;
+
+            // Deadzone of 8px for responsive precision
+            this.input.left = px < -8;
+            this.input.right = px > 8;
+            this.input.up = py < -8;
+            this.input.down = py > 8;
+          }
         }
-      }
-    };
+      }, { passive: true });
 
-    window.addEventListener('touchend', endTouch, { passive: true });
-    window.addEventListener('touchcancel', endTouch, { passive: true });
+      const endTouch = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === touchId) {
+            touchId = null;
+            if (joystick) joystick.style.display = 'none';
+            if (knob) knob.style.transform = 'translate(0px, 0px)';
+            this.input.left = false;
+            this.input.right = false;
+            this.input.up = false;
+            this.input.down = false;
+          }
+        }
+      };
 
-    btnFire.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      sounds.init();
-      this.input.fire = true;
-    });
-    btnFire.addEventListener('touchend', () => {
-      this.input.fire = false;
-    });
+      window.addEventListener('touchend', endTouch, { passive: true });
+      window.addEventListener('touchcancel', endTouch, { passive: true });
+    }
 
-    btnEmp.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      sounds.init();
-      this.triggerEMP();
-    });
+    if (btnFire) {
+      btnFire.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        sounds.init();
+        this.input.fire = true;
+      });
+      btnFire.addEventListener('touchend', () => {
+        if (!this.autoFire) {
+          this.input.fire = false;
+        }
+      });
+    }
+
+    if (btnEmp) {
+      btnEmp.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        sounds.init();
+        this.triggerEMP();
+      });
+    }
   }
 
   onKeyDown(e) {
@@ -677,24 +741,27 @@ class Game {
     const delta = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
 
-    // Dynamic Camera Follow & Shake
+    // Dynamic Camera Follow & Shake (smooth and adaptive to aspect ratio)
     const shake = this.fx.getShakeOffset();
-    const targetCamX = this.player.mesh.position.x * 0.45 + shake.x;
-    const targetCamY = 7 + this.player.mesh.position.y * 0.35 + shake.y;
+    const targetCamX = this.player.mesh.position.x * 0.35 + shake.x;
+    const defaultY = this.cameraDefaultPos ? this.cameraDefaultPos.y : 7;
+    const targetCamY = defaultY + this.player.mesh.position.y * 0.25 + shake.y;
 
-    this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamX, 0.1);
-    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.1);
+    this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamX, 0.12);
+    this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.12);
     this.camera.lookAt(
-      this.player.mesh.position.x * 0.25,
-      this.player.mesh.position.y * 0.25,
+      this.player.mesh.position.x * 0.2,
+      this.player.mesh.position.y * 0.2,
       -60
     );
 
-    // Update crosshair in HUD
+    // Update crosshair in HUD (bounded smoothly to active player bounds)
     const crosshair = document.getElementById('crosshair');
     if (crosshair) {
-      const screenX = ((this.player.mesh.position.x / 42) * 0.4 + 0.5) * window.innerWidth;
-      const screenY = ((-this.player.mesh.position.y / 24) * 0.4 + 0.5) * window.innerHeight;
+      const boundX = this.player.bounds ? this.player.bounds.maxX : 25;
+      const boundY = this.player.bounds ? this.player.bounds.maxY : 18;
+      const screenX = ((this.player.mesh.position.x / boundX) * 0.42 + 0.5) * window.innerWidth;
+      const screenY = ((-this.player.mesh.position.y / boundY) * 0.42 + 0.5) * window.innerHeight;
       crosshair.style.transform = `translate(${screenX - 22}px, ${screenY - 22}px)`;
     }
 
@@ -711,7 +778,10 @@ class Game {
     this.fx.update(delta, warpSpeed);
 
     if (this.state === 'PLAYING') {
-      this.player.update(delta, this.input);
+      if (this.autoFire) {
+        this.input.fire = true;
+      }
+      this.player.update(delta, this.input, this.camera);
       this.enemyManager.update(delta, this.player.mesh.position);
       this.collectibles.update(delta, this.player, (type) => {
         const names = {

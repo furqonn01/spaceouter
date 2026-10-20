@@ -492,27 +492,81 @@ html, body {
 
 /* Mobile Controls Overlay */
 #mobile-controls {
-  position: absolute;
-  bottom: 24px;
+  position: fixed;
+  top: 0;
   left: 0;
   width: 100%;
-  padding: 0 30px;
+  height: 100%;
   display: none;
-  justify-content: space-between;
-  align-items: flex-end;
   z-index: 20;
   pointer-events: none;
+  touch-action: none;
+}
+
+/* Dynamic Left Touch Area */
+#touch-move-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Floating Joystick Base */
+#dynamic-joystick {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: none;
+  transition: opacity 0.15s;
+}
+
+#dynamic-stick-ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 243, 255, 0.6);
+  background: rgba(0, 243, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.25), inset 0 0 15px rgba(0, 243, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#dynamic-stick-knob {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #00f3ff 60%, #0077ff 100%);
+  box-shadow: 0 0 16px rgba(0, 243, 255, 0.8);
+  transform: translate(0px, 0px);
+  will-change: transform;
+}
+
+/* Touch Action Buttons on Right */
+#touch-action-area {
+  position: absolute;
+  right: 18px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
 }
 
 .touch-btn {
-  width: 68px;
-  height: 68px;
   border-radius: 50%;
   background: rgba(0, 243, 255, 0.15);
   border: 2px solid var(--primary-cyan);
   color: #fff;
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -521,29 +575,71 @@ html, body {
   box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.touch-btn.fire-btn {
+  width: 72px;
+  height: 72px;
+  font-size: 15px;
+  background: linear-gradient(135deg, rgba(0, 243, 255, 0.3), rgba(0, 119, 255, 0.3));
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
 }
 
 .touch-btn.emp-btn {
   background: rgba(255, 190, 11, 0.2);
   border-color: var(--warning-gold);
   color: var(--warning-gold);
-  width: 54px;
-  height: 54px;
-  margin-bottom: 12px;
+  width: 56px;
+  height: 56px;
+  font-size: 11px;
+  box-shadow: 0 0 15px rgba(255, 190, 11, 0.4);
+}
+
+.touch-btn.autofire-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.6);
+  width: 52px;
+  height: 52px;
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.touch-btn.autofire-btn.active {
+  background: rgba(0, 243, 255, 0.3);
+  border-color: var(--primary-cyan);
+  color: var(--primary-cyan);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
 }
 
 .touch-btn:active {
-  background: var(--primary-cyan);
-  color: #030611;
   transform: scale(0.92);
 }
 
 /* Responsive for Mobile & Landscape */
-@media (max-width: 768px), (max-height: 520px) {
-  #hud { padding: 8px 12px; }
-  .hud-panel { padding: 6px 10px; }
-  .vitals-container { min-width: 130px; }
-  .score-display { font-size: 22px; }
+@media (max-width: 820px), (max-height: 540px) {
+  #hud {
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 12px 6px;
+  }
+  .hud-panel {
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .vitals-container {
+    min-width: 120px;
+    gap: 4px;
+  }
+  .bar-track { height: 6px; }
+  .bar-label { font-size: 10px; }
+  .emp-status { font-size: 10px; }
+  .emp-icon { width: 10px; height: 10px; }
+  .score-title { font-size: 9px; }
+  .score-display { font-size: 20px; }
+  .level-text { font-size: 13px; }
+  .icon-btn { width: 30px; height: 30px; font-size: 12px; }
+
   .game-title { font-size: 24px; letter-spacing: 1px; }
   .game-subtitle { font-size: 12px; margin-bottom: 12px; }
   .modal-card { padding: 18px 14px; max-width: 95%; max-height: 92vh; }
