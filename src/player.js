@@ -110,15 +110,11 @@ export class Player {
         const targetScale = 7.5 / (maxDim || 1);
         pivot.scale.setScalar(targetScale);
 
-        // Determine orientation:
-        // Military Rocket model has nose along -X and tail along +X, with wings along Z.
-        // Rotating by -Math.PI / 2 around Y turns nose to -Z (forward) and tail to +Z (camera-facing),
-        // spreading the wings horizontally along X.
-        if (size.x >= size.y && size.x >= size.z) {
-          pivot.rotation.y = -Math.PI / 2;
-        } else if (size.y >= size.z && size.y >= size.x) {
-          pivot.rotation.x = -Math.PI / 2;
-        }
+        // Model orientation:
+        // The FBX model's nose (pucuk_pesawat) naturally points along -Z (straight forward into space),
+        // cockpit (Sphere) faces +Y (up), and rocket booster (roket) is at +Z (rear exhaust).
+        // Therefore, rotation is (0, 0, 0).
+        pivot.rotation.set(0, 0, 0);
 
         // Enhance materials with military stealth finish & metallic highlights
         fbx.traverse((child) => {
